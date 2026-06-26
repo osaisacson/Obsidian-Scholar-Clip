@@ -1,0 +1,37 @@
+{
+  "manifest_version": 3,
+  "name": "Obsidian Scholar Clip",
+  "version": "4.0.0",
+  "description": "Clip academic papers directly into your Obsidian vault. Fetches citation from DOI and writes the note file \u2014 no plugin needed.",
+  "permissions": [
+    "activeTab",
+    "scripting",
+    "storage",
+    "downloads",
+    "tabs"
+  ],
+  "host_permissions": [
+    "https://api.crossref.org/*",
+    "https://export.arxiv.org/*",
+    "https://pubmed.ncbi.nlm.nih.gov/*",
+    "https://eutils.ncbi.nlm.nih.gov/*",
+    "https://arxiv.org/*",
+    "<all_urls>"
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  }
+}

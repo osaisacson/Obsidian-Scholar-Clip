@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Scholar Clip</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-size: 13px;
+      color: #1a1a1a;
+      background: #fff;
+      width: 380px;
+      min-height: 180px;
+    }
+
+    /* ── Header ──────────────────────────────────────────── */
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 11px 14px 10px;
+      border-bottom: 1px solid #e8e8e8;
+    }
+    .header-title {
+      font-weight: 600;
+      font-size: 14px;
+      color: #5b21b6;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .header-title img { width: 18px; height: 18px; }
+    .settings-btn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: #999;
+      padding: 3px 5px;
+      border-radius: 4px;
+      font-size: 16px;
+      line-height: 1;
+    }
+    .settings-btn:hover { color: #5b21b6; background: #f3f0ff; }
+
+    /* ── Status row ──────────────────────────────────────── */
+    #status-row {
+      display: none;
+      align-items: center;
+      gap: 7px;
+      padding: 7px 14px;
+      background: #fafafa;
+      border-bottom: 1px solid #efefef;
+    }
+    .status-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      background: #ccc;
+      transition: background 0.2s;
+    }
+    .status-dot.detecting { background: #f59e0b; }
+    .status-dot.found     { background: #22c55e; }
+    .status-dot.warn      { background: #f59e0b; }
+    .status-dot.error     { background: #ef4444; }
+    #statusText { font-size: 12px; color: #666; flex: 1; }
+    #statusBadge {
+      display: none;
+      font-size: 10px;
+      font-weight: 600;
+      background: #ede9fe;
+      color: #5b21b6;
+      padding: 2px 7px;
+      border-radius: 10px;
+    }
+
+    /* ── Not configured notice ───────────────────────────── */
+    #not-configured {
+      display: none;
+      padding: 22px 16px;
+      text-align: center;
+      color: #666;
+      font-size: 13px;
+      line-height: 1.6;
+    }
+    #not-configured a {
+      color: #7c3aed;
+      cursor: pointer;
+      text-decoration: underline;
+    }
+
+    /* ── Form view ───────────────────────────────────────── */
+    #form-view { display: none; padding: 10px 14px 14px; }
+
+    .prop-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      margin-bottom: 7px;
+    }
+    .prop-label {
+      font-size: 11px;
+      color: #999;
+      width: 60px;
+      flex-shrink: 0;
+      padding-top: 5px;
+      text-align: right;
+    }
+    .prop-input {
+      flex: 1;
+      font-size: 12px;
+      font-family: inherit;
+      border: 1px solid #e0e0e0;
+      border-radius: 5px;
+      padding: 4px 7px;
+      color: #1a1a1a;
+      background: #fff;
+      resize: none;
+      line-height: 1.45;
+    }
+    .prop-input:focus {
+      outline: none;
+      border-color: #7c3aed;
+      box-shadow: 0 0 0 2px #ede9fe;
+    }
+    textarea.prop-input { min-height: 54px; }
+
+    /* ── PDF section ─────────────────────────────────────── */
+    .pdf-instr {
+      font-size: 12px;
+      color: #444;
+      margin-bottom: 7px;
+      line-height: 1.6;
+    }
+    .copy-name-btn {
+      display: inline-block;
+      font-size: 11px;
+      font-family: ui-monospace, monospace;
+      padding: 1px 7px;
+      background: #ede9fe;
+      color: #5b21b6;
+      border: 1px solid #c4b5fd;
+      border-radius: 4px;
+      cursor: pointer;
+      margin: 0 2px;
+    }
+    .copy-name-btn:hover { background: #ddd6fe; }
+    .pdf-find-link { font-size: 11px; color: #7c3aed; }
+    .pdf-checks { display: flex; gap: 14px; margin-top: 2px; }
+    .pdf-check-label {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 12px;
+      color: #444;
+      cursor: pointer;
+      user-select: none;
+    }
+    .pdf-check-label input[type="checkbox"] {
+      width: 14px; height: 14px;
+      cursor: pointer;
+      accent-color: #7c3aed;
+    }
+
+    /* ── Clip button ─────────────────────────────────────── */
+    .clip-btn {
+      width: 100%;
+      margin-top: 10px;
+      padding: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      font-family: inherit;
+      background: #7c3aed;
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    .clip-btn:hover:not(:disabled) { background: #6d28d9; }
+    .clip-btn:disabled { background: #c4b5fd; cursor: default; }
+
+    /* ── Message row ─────────────────────────────────────── */
+    .msg-row {
+      font-size: 11px;
+      margin-top: 7px;
+      padding: 5px 8px;
+      border-radius: 5px;
+    }
+    .msg-row.success { background: #f0fdf4; color: #16a34a; }
+    .msg-row.error   { background: #fef2f2; color: #dc2626; }
+
+    /* ── Settings view ───────────────────────────────────── */
+    #settings-view { display: none; }
+
+    .settings-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 9px 14px;
+      border-bottom: 1px solid #e8e8e8;
+    }
+    .back-btn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 12px;
+      color: #7c3aed;
+      padding: 3px 7px;
+      border-radius: 4px;
+      font-family: inherit;
+    }
+    .back-btn:hover { background: #f3f0ff; }
+    .settings-title { font-weight: 600; font-size: 13px; }
+
+    .settings-body { padding: 12px 14px 16px; }
+
+    .settings-section { margin-bottom: 16px; }
+    .settings-label {
+      font-size: 10px;
+      font-weight: 700;
+      color: #aaa;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 7px;
+    }
+
+    /* ── Folder rows ─────────────────────────────────────── */
+    .folder-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .folder-name {
+      flex: 1;
+      font-size: 12px;
+      color: #bbb;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .folder-name.set { color: #1a1a1a; }
+    .folder-btn {
+      flex-shrink: 0;
+      font-size: 11px;
+      font-family: inherit;
+      padding: 4px 11px;
+      border: 1px solid #7c3aed;
+      border-radius: 5px;
+      background: #fff;
+      color: #7c3aed;
+      cursor: pointer;
+    }
+    .folder-btn:hover { background: #f3f0ff; }
+
+    /* ── Template editor ─────────────────────────────────── */
+    .tpl-col-row {
+      display: flex;
+      gap: 5px;
+      margin-bottom: 4px;
+      padding-right: 22px;
+    }
+    .tpl-col-lbl {
+      flex: 2;
+      font-size: 10px;
+      color: #bbb;
+      padding-left: 2px;
+    }
+    .tpl-col-def {
+      flex: 3;
+      font-size: 10px;
+      color: #bbb;
+      padding-left: 2px;
+    }
+    .tpl-row {
+      display: flex;
+      gap: 5px;
+      margin-bottom: 5px;
+      align-items: center;
+    }
+    .tpl-label {
+      flex: 2;
+      font-size: 12px;
+      font-family: inherit;
+      border: 1px solid #e0e0e0;
+      border-radius: 5px;
+      padding: 4px 7px;
+    }
+    .tpl-default {
+      flex: 3;
+      font-size: 12px;
+      font-family: inherit;
+      border: 1px solid #e0e0e0;
+      border-radius: 5px;
+      padding: 4px 7px;
+    }
+    .tpl-label:focus, .tpl-default:focus {
+      outline: none;
+      border-color: #7c3aed;
+      box-shadow: 0 0 0 2px #ede9fe;
+    }
+    .tpl-rm {
+      flex-shrink: 0;
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: #ccc;
+      font-size: 15px;
+      padding: 0 3px;
+      line-height: 1;
+    }
+    .tpl-rm:hover { color: #ef4444; }
+    .tpl-drag {
+      flex-shrink: 0;
+      color: #ccc;
+      cursor: grab;
+      padding: 0 4px;
+      font-size: 14px;
+      line-height: 1;
+      user-select: none;
+    }
+    .tpl-drag:active { cursor: grabbing; }
+    .tpl-row.dragging { opacity: 0.4; }
+    .tpl-row.drag-over { outline: 2px solid #7c3aed; border-radius: 5px; }
+
+    #addFieldBtn {
+      font-size: 11px;
+      font-family: inherit;
+      padding: 4px 10px;
+      border: 1px dashed #ccc;
+      border-radius: 5px;
+      background: #fff;
+      color: #aaa;
+      cursor: pointer;
+      margin-top: 4px;
+    }
+    #addFieldBtn:hover { border-color: #7c3aed; color: #7c3aed; }
+
+    .settings-hint {
+      font-size: 11px;
+      color: #777;
+      line-height: 1.65;
+    }
+    .settings-hint strong { color: #444; }
+
+    #settingsError {
+      display: none;
+      font-size: 11px;
+      color: #dc2626;
+      background: #fef2f2;
+      padding: 5px 8px;
+      border-radius: 5px;
+      margin-top: 8px;
+    }
+
+    #saveSettings {
+      width: 100%;
+      margin-top: 14px;
+      padding: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      font-family: inherit;
+      background: #7c3aed;
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    #saveSettings:hover { background: #6d28d9; }
+  </style>
+</head>
+<body>
+
+<!-- ── Main view ────────────────────────────────────────────────── -->
+<div id="main-view">
+
+  <div class="header">
+    <div class="header-title">
+      <img src="icons/icon48.png" alt="" />
+      Scholar Clip
+    </div>
+    <button class="settings-btn" id="openSettings" title="Settings">&#9881;</button>
+  </div>
+
+  <div id="status-row">
+    <div class="status-dot" id="statusDot"></div>
+    <span id="statusText">Starting...</span>
+    <span id="statusBadge"></span>
+  </div>
+
+  <div id="not-configured">
+    <p>No vault folder selected.</p>
+    <p><a id="goToSettings">Open Settings</a> to get started.</p>
+  </div>
+
+  <div id="form-view">
+    <div id="mainForm"></div>
+    <div class="msg-row" id="msgRow"></div>
+  </div>
+
+</div>
+
+<!-- ── Settings view ────────────────────────────────────────────── -->
+<div id="settings-view">
+
+  <div class="settings-header">
+    <button class="back-btn" id="backBtn">&#8592; Back</button>
+    <span class="settings-title">Settings</span>
+  </div>
+
+  <div class="settings-body">
+
+    <div class="settings-section">
+      <div class="settings-label">Vault Folder</div>
+      <div class="folder-row">
+        <span class="folder-name" id="vaultFolderName">No folder selected</span>
+        <button class="folder-btn" id="selectVaultBtn">Select Folder</button>
+      </div>
+    </div>
+
+    <div class="settings-section">
+      <div class="settings-label">PDF Downloads</div>
+      <p class="settings-hint">
+        PDFs are saved via Chrome's download dialog. To make it always open to your vault's PDF folder:<br><br>
+        1. Open <strong>Chrome Settings &rarr; Downloads</strong><br>
+        2. Turn on <strong>"Ask where to save each file"</strong><br>
+        3. The first time you save a PDF, navigate to your vault PDF folder — Chrome will remember it from then on.
+      </p>
+    </div>
+
+    <div class="settings-section">
+      <div class="settings-label">Note Template</div>
+      <div class="tpl-col-row">
+        <span class="tpl-col-lbl">Field name</span>
+        <span class="tpl-col-def">Default value</span>
+      </div>
+      <div id="tplFields"></div>
+      <button id="addFieldBtn">+ Add field</button>
+    </div>
+
+    <div id="settingsError"></div>
+    <button id="saveSettings">Save Settings</button>
+
+  </div>
+</div>
+
+<script src="popup.js"></script>
+</body>
+</html>
