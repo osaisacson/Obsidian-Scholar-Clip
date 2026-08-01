@@ -1,4 +1,4 @@
-// ScholarClip popup.js v12
+// ScholarClip popup.js v13
 // Key architecture: form renders immediately with template defaults.
 // API data fills in auto-fields asynchronously. Tags are always populated.
 
@@ -95,6 +95,7 @@ async function loadTabState(tabId) {
 
 $("openSettings").addEventListener("click", showSettings);
 $("goToSettings")?.addEventListener("click", showSettings);
+$("goToSettingsFromWarning")?.addEventListener("click", showSettings);
 $("backBtn").addEventListener("click", () => {
   $("settings-view").style.display = "none";
   $("main-view").style.display     = "block";
@@ -105,8 +106,8 @@ async function showSettings() {
   $("settings-view").style.display = "block";
   const { vaultName, obsidianVaultName } = await chrome.storage.sync.get(["vaultName", "obsidianVaultName"]);
   setFolderDisplay("vaultFolderName", "selectVaultBtn", vaultName);
-  // Obsidian Vault Name is independent of the save folder — never overwrite
-  // a value the user has already set, but suggest the folder name if empty.
+  // Obsidian Vault Name is fully independent of the save folder — always
+  // just load whatever the user has typed in, no auto-fill.
   $("obsidianVaultNameInput").value = obsidianVaultName || "";
   renderTemplateEditor(await loadTemplateFields());
 }
@@ -130,14 +131,6 @@ async function pickFolder(dbKey, storageKey, nameElId, btnId) {
     await dbPut(dbKey, h);
     await chrome.storage.sync.set({ [storageKey]: h.name });
     setFolderDisplay(nameElId, btnId, h.name);
-
-    // Suggest the folder name as the Obsidian vault name, but only if the
-    // user hasn't already set one — picking a subfolder (e.g. "Library")
-    // should NOT silently overwrite the real vault name.
-    const vaultInput = $("obsidianVaultNameInput");
-    if (vaultInput && !vaultInput.value.trim()) {
-      vaultInput.value = h.name;
-    }
   } catch (e) {
     if (e.name !== "AbortError") showSettingsErr("Could not access folder: " + e.message);
   }
@@ -263,17 +256,23 @@ function showSettingsErr(msg) {
 
 async function init() {
   detectedPdfUrl = null;
-  const { vaultName } = await chrome.storage.sync.get(["vaultName"]);
+  const { vaultName, obsidianVaultName } = await chrome.storage.sync.get(["vaultName", "obsidianVaultName"]);
 
   if (!vaultName) {
-    $("not-configured").style.display = "block";
-    $("status-row").style.display     = "none";
-    $("form-view").style.display      = "none";
+    $("not-configured").style.display     = "block";
+    $("status-row").style.display         = "none";
+    $("vault-name-warning").style.display = "none";
+    $("form-view").style.display          = "none";
     return;
   }
 
   $("not-configured").style.display = "none";
   $("status-row").style.display     = "flex";
+
+  // Non-blocking reminder: notes will still save fine without this, but
+  // auto-open-in-Obsidian silently won't happen. Mainly for people who
+  // upgraded from an older version without an Obsidian Vault Name saved yet.
+  $("vault-name-warning").style.display = obsidianVaultName ? "none" : "flex";
 
   // Step 1: Build form with template defaults immediately
   const tplFields = await loadTemplateFields();
