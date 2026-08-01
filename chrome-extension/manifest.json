@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Obsidian Scholar Clip",
   "version": "4.0.0",
-  "description": "Clip academic papers directly into your Obsidian vault. Fetches citation from DOI and writes the note file \u2014 no plugin needed.",
+  "description": "Clip academic papers directly into your Obsidian vault. Fetches citation from DOI, finds and prompts you to download the pdf, and then creates a note on the paper in a folder of your choice in Obsidian.",
   "permissions": [
     "activeTab",
     "scripting",
