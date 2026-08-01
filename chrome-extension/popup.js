@@ -103,8 +103,11 @@ $("backBtn").addEventListener("click", () => {
 async function showSettings() {
   $("main-view").style.display     = "none";
   $("settings-view").style.display = "block";
-  const { vaultName } = await chrome.storage.sync.get(["vaultName"]);
+  const { vaultName, obsidianVaultName } = await chrome.storage.sync.get(["vaultName", "obsidianVaultName"]);
   setFolderDisplay("vaultFolderName", "selectVaultBtn", vaultName);
+  // Obsidian Vault Name is independent of the save folder — never overwrite
+  // a value the user has already set, but suggest the folder name if empty.
+  $("obsidianVaultNameInput").value = obsidianVaultName || "";
   renderTemplateEditor(await loadTemplateFields());
 }
 
@@ -127,6 +130,14 @@ async function pickFolder(dbKey, storageKey, nameElId, btnId) {
     await dbPut(dbKey, h);
     await chrome.storage.sync.set({ [storageKey]: h.name });
     setFolderDisplay(nameElId, btnId, h.name);
+
+    // Suggest the folder name as the Obsidian vault name, but only if the
+    // user hasn't already set one — picking a subfolder (e.g. "Library")
+    // should NOT silently overwrite the real vault name.
+    const vaultInput = $("obsidianVaultNameInput");
+    if (vaultInput && !vaultInput.value.trim()) {
+      vaultInput.value = h.name;
+    }
   } catch (e) {
     if (e.name !== "AbortError") showSettingsErr("Could not access folder: " + e.message);
   }
@@ -224,7 +235,12 @@ function collectTplFields() {
 
 $("saveSettings").addEventListener("click", async () => {
   const { vaultName } = await chrome.storage.sync.get(["vaultName"]);
-  if (!vaultName) { showSettingsErr("Please select your vault folder first."); return; }
+  if (!vaultName) { showSettingsErr("Please select your save folder first."); return; }
+
+  const obsidianVaultName = $("obsidianVaultNameInput").value.trim();
+  if (!obsidianVaultName) { showSettingsErr("Please enter your Obsidian vault name."); return; }
+  await chrome.storage.sync.set({ obsidianVaultName });
+
   await saveTemplateFields(collectTplFields());
   $("saveSettings").textContent = "Saved";
   setTimeout(() => {
@@ -493,7 +509,7 @@ async function onClip() {
     const vaultHandle = await getHandle("vaultDir");
     if (!vaultHandle) throw new Error("Vault not accessible — re-select in Settings.");
 
-    const { vaultName } = await chrome.storage.sync.get(["vaultName"]);
+    const { obsidianVaultName } = await chrome.storage.sync.get(["obsidianVaultName"]);
     const tplFields     = await loadTemplateFields();
 
     // Helper: get current value of any form field by label
@@ -546,10 +562,11 @@ async function onClip() {
     showMsg("success", `Saved: ${noteName}`);
     clipBtn.textContent = "Clipped";
 
-    // Open in Obsidian
-    if (vaultName) {
+    // Open in Obsidian — uses the Obsidian Vault Name setting, NOT the save
+    // folder's name, since the save folder may be a subfolder of the vault.
+    if (obsidianVaultName) {
       setTimeout(() => {
-        window.location.href = `obsidian://open?vault=${encodeURIComponent(vaultName)}&file=${encodeURIComponent(noteName)}`;
+        window.location.href = `obsidian://open?vault=${encodeURIComponent(obsidianVaultName)}&file=${encodeURIComponent(noteName)}`;
       }, 250);
     }
   } catch (e) {
