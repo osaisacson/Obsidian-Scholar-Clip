@@ -1,11 +1,11 @@
+
 # Obsidian Scholar Clip
 
 A Chrome extension that clips academic papers directly into your [Obsidian](https://obsidian.md) vault — no Obsidian plugin required.
 
 It detects the DOI, arXiv ID, or PubMed ID on the page, fetches full citation metadata (APA format), and writes a formatted note with YAML frontmatter straight to your vault folder.
 
-![Scholar Clip screenshot](icons/icon128.png)
-
+<img width="2088" height="1558" alt="Screenshot 2026-08-01 at 13 28 56" src="https://github.com/user-attachments/assets/e705c4a6-cb65-44da-9e38-e55aac281da8" />
 ---
 
 ## Features
